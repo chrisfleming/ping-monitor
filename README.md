@@ -10,25 +10,25 @@ On first run, a config file is created at `~/.config/ping-monitor/config.json` w
 
 ```json
 {
-  "server":          "http://localhost:8765",
-  "port":            8765,
-  "history":         60,
-  "interval":        1.0,
-  "threshold":       3,
+  "server": "http://localhost:8765",
+  "port": 8765,
+  "history": 60,
+  "interval": 1.0,
+  "threshold": 3,
   "latency_good_ms": 50,
   "latency_warn_ms": 150
 }
 ```
 
-| Key | Used by | Description |
-|---|---|---|
-| `server` | client, wait_for_host | Default server URL to connect to |
-| `port` | server | Port the server listens on |
-| `history` | server | Number of pings kept per host |
-| `interval` | server, client | Seconds between pings / client refresh rate |
-| `threshold` | server | Consecutive failures before marking a host DOWN |
-| `latency_good_ms` | client, wait_for_host | Latency below this is shown green |
-| `latency_warn_ms` | client, wait_for_host | Latency below this is yellow, above is red |
+| Key               | Used by               | Description                                     |
+| ----------------- | --------------------- | ----------------------------------------------- |
+| `server`          | client, wait_for_host | Default server URL to connect to                |
+| `port`            | server                | Port the server listens on                      |
+| `history`         | server                | Number of pings kept per host                   |
+| `interval`        | server, client        | Seconds between pings / client refresh rate     |
+| `threshold`       | server                | Consecutive failures before marking a host DOWN |
+| `latency_good_ms` | client, wait_for_host | Latency below this is shown green               |
+| `latency_warn_ms` | client, wait_for_host | Latency below this is yellow, above is red      |
 
 Command-line flags always override config values.
 
@@ -47,12 +47,12 @@ pip install -r requirements.txt
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `ping_server.py` | Pings hosts, exposes rolling stats over HTTP |
-| `ping_client.py` | Live terminal dashboard — connects to the server |
-| `wait_for_host.py` | Waits for a host to come back online |
-| `monitor_common.py` | Shared utilities (imported by client scripts) |
+| File                | Purpose                                          |
+| ------------------- | ------------------------------------------------ |
+| `ping_server.py`    | Pings hosts, exposes rolling stats over HTTP     |
+| `ping_client.py`    | Live terminal dashboard — connects to the server |
+| `wait_for_host.py`  | Waits for a host to come back online             |
+| `monitor_common.py` | Shared utilities (imported by client scripts)    |
 
 ---
 
@@ -65,12 +65,12 @@ python ping_server.py 8.8.8.8 1.1.1.1 192.168.1.1
 python ping_server.py --port 9000 --history 120 8.8.8.8
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `--port` | `8765` | HTTP port to listen on |
-| `--history` | `60` | Number of pings to keep per host |
-| `--interval` | `1.0` | Seconds between pings |
-| `--threshold` | `3` | Consecutive failures before marking a host DOWN |
+| Option        | Default | Description                                     |
+| ------------- | ------- | ----------------------------------------------- |
+| `--port`      | `8765`  | HTTP port to listen on                          |
+| `--history`   | `60`    | Number of pings to keep per host                |
+| `--interval`  | `1.0`   | Seconds between pings                           |
+| `--threshold` | `3`     | Consecutive failures before marking a host DOWN |
 
 Hosts can also be added and removed at runtime via the API (see below).
 
@@ -86,10 +86,10 @@ python ping_client.py --server http://192.168.1.10:9000
 python ping_client.py --interval 0.5
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `--server` | `http://localhost:8765` | Server base URL |
-| `--interval` | `1.0` | Refresh interval in seconds |
+| Option       | Default                 | Description                 |
+| ------------ | ----------------------- | --------------------------- |
+| `--server`   | `http://localhost:8765` | Server base URL             |
+| `--interval` | `1.0`                   | Refresh interval in seconds |
 
 The dashboard shows for each host:
 
@@ -109,7 +109,7 @@ Host               Status   Last(ms)  Avg(ms)  Min(ms)  Max(ms)  Loss   Graph
 
 ## wait_for_host.py
 
-Waits until a host comes back online — a replacement for a simple bash ping loop.
+Waits until a host comes back online; replaces simple bash ping loop.
 
 ```bash
 python wait_for_host.py 192.168.1.1
@@ -123,11 +123,11 @@ live dashboard with the target host highlighted, and exits with a success messag
 **Without ping_server** — falls back to a plain ping loop, printing one line per attempt,
 same behaviour as the original bash script.
 
-| Option | Default | Description |
-|---|---|---|
-| `--server` | `http://localhost:8765` | ping_server base URL |
-| `--keep` | off | Leave host in server after it comes back |
-| `--no-server` | off | Skip server detection, use standalone mode |
+| Option        | Default                 | Description                                |
+| ------------- | ----------------------- | ------------------------------------------ |
+| `--server`    | `http://localhost:8765` | ping_server base URL                       |
+| `--keep`      | off                     | Leave host in server after it comes back   |
+| `--no-server` | off                     | Skip server detection, use standalone mode |
 
 Exit code is `0` on success, `1` if interrupted.
 
@@ -150,14 +150,15 @@ python wait_for_host.py --server http://192.168.1.10:9000 192.168.1.254
 
 The server exposes a small HTTP API, useful for scripting or integration.
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/stats` | JSON snapshot of all hosts |
-| `GET` | `/health` | Returns `ok` — use to check if server is up |
-| `POST` | `/hosts` | Add a host at runtime |
-| `DELETE` | `/hosts/<host>` | Remove a host at runtime |
+| Method   | Path            | Description                                 |
+| -------- | --------------- | ------------------------------------------- |
+| `GET`    | `/stats`        | JSON snapshot of all hosts                  |
+| `GET`    | `/health`       | Returns `ok` — use to check if server is up |
+| `POST`   | `/hosts`        | Add a host at runtime                       |
+| `DELETE` | `/hosts/<host>` | Remove a host at runtime                    |
 
 **Add a host:**
+
 ```bash
 curl -X POST http://localhost:9000/hosts \
      -H 'Content-Type: application/json' \
@@ -165,11 +166,13 @@ curl -X POST http://localhost:9000/hosts \
 ```
 
 **Remove a host:**
+
 ```bash
 curl -X DELETE http://localhost:9000/hosts/192.168.1.50
 ```
 
 **Stats response shape:**
+
 ```json
 {
   "8.8.8.8": {
