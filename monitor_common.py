@@ -204,6 +204,9 @@ def build_stats_table(stats, highlight=None, title=None):
             ("▶ " if is_target else "  ") + host,
             style=("bold white" if is_target else "white"),
         )
+        resolved_ip = d.get("resolved_ip")
+        if resolved_ip:
+            host_label.append(f"\n   {resolved_ip}", style="dim")
 
         table.add_row(
             host_label,

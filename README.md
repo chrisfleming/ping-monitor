@@ -74,6 +74,14 @@ python ping_server.py --port 9000 --history 120 8.8.8.8
 
 Hosts can also be added and removed at runtime via the API (see below).
 
+Hosts given as a hostname (not an IP literal) are resolved to an IP once when
+added, and that IP is pinged for the lifetime of the host — this pins the
+target so round-robin/dynamic DNS can't shift it mid-history. The dashboard
+and stats still report by the original hostname; the resolved IP is shown
+alongside it. If resolution fails at add-time, the hostname is pinged
+directly (letting the `ping` command resolve it itself each probe), same as
+before this feature existed.
+
 ---
 
 ## ping_client.py
@@ -184,7 +192,8 @@ curl -X DELETE http://localhost:9000/hosts/192.168.1.50
     "packet_loss_pct": 0.0,
     "total_sent": 60,
     "history": [12.1, 11.8, null, 13.0, "..."],
-    "last_ping": "2026-05-21T14:30:00.123456"
+    "last_ping": "2026-05-21T14:30:00.123456",
+    "resolved_ip": null
   }
 }
 ```

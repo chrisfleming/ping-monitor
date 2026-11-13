@@ -14,11 +14,31 @@ import json
 import re
 import argparse
 import platform
+import socket
+import ipaddress
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from collections import deque
 from datetime import datetime
 
 from monitor_common import config as _cfg
+
+
+def resolve_host(host):
+    """
+    Return the resolved IP for a hostname, or None if `host` is already an
+    IP literal or resolution fails. Resolving once at add-time (rather than
+    letting the `ping` command re-resolve every probe) pins the target so a
+    round-robin DNS name doesn't jump between IPs mid-history.
+    """
+    try:
+        ipaddress.ip_address(host)
+        return None  # already an IP literal, nothing to resolve
+    except ValueError:
+        pass
+    try:
+        return socket.gethostbyname(host)
+    except socket.gaierror:
+        return None
 
 
 class PingMonitor:
@@ -32,11 +52,13 @@ class PingMonitor:
         self._running = True
 
         for host in hosts:
+            resolved_ip = resolve_host(host)
             self.data[host] = {
                 "history": deque(maxlen=history_size),  # None = timeout, float = ms
                 "consecutive_failures": 0,
                 "status": "unknown",
                 "last_ping": None,
+                "resolved_ip": resolved_ip,  # pinged instead of `host` when set
             }
 
     def ping_once(self, host):
@@ -69,9 +91,10 @@ class PingMonitor:
             return None
 
     def monitor_host(self, host):
+        target = self.data[host]["resolved_ip"] or host
         while self._running:
             start = time.monotonic()
-            latency = self.ping_once(host)
+            latency = self.ping_once(target)
             elapsed = time.monotonic() - start
 
             with self.lock:
@@ -112,11 +135,13 @@ class PingMonitor:
                     "packet_loss_pct": (lost / total * 100) if total > 0 else 0,
                     "total_sent": total,
                     "last_ping": d["last_ping"],
+                    "resolved_ip": d.get("resolved_ip"),
                 }
             return result
 
     def add_host(self, host):
         """Dynamically add a host and start monitoring it. No-op if already present."""
+        resolved_ip = resolve_host(host)
         with self.lock:
             if host in self.data:
                 return False  # already monitored
@@ -125,10 +150,12 @@ class PingMonitor:
                 "consecutive_failures": 0,
                 "status": "unknown",
                 "last_ping": None,
+                "resolved_ip": resolved_ip,
             }
         t = threading.Thread(target=self.monitor_host, args=(host,), daemon=True)
         t.start()
-        print(f"[server] Added host: {host}")
+        suffix = f" -> {resolved_ip}" if resolved_ip else ""
+        print(f"[server] Added host: {host}{suffix}")
         return True
 
     def remove_host(self, host):
@@ -144,7 +171,11 @@ class PingMonitor:
         for host in list(self.data.keys()):
             t = threading.Thread(target=self.monitor_host, args=(host,), daemon=True)
             t.start()
-        print(f"[server] Monitoring {len(self.data)} host(s): {', '.join(self.data.keys())}")
+        labels = [
+            f"{host} -> {d['resolved_ip']}" if d["resolved_ip"] else host
+            for host, d in self.data.items()
+        ]
+        print(f"[server] Monitoring {len(self.data)} host(s): {', '.join(labels)}")
 
     def stop(self):
         self._running = False

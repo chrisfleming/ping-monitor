@@ -58,7 +58,9 @@ def simple_display(base_url, interval):
                 loss = f"{d['packet_loss_pct']:.1f}%"
                 cf = d["consecutive_failures"]
                 flag = "  *** DOWN ***" if status == "DOWN" else ""
-                print(f"  {host:<25}  {status:<6}  avg={avg:<10}  loss={loss:<7}  fail={cf}{flag}")
+                resolved_ip = d.get("resolved_ip")
+                label = f"{host} ({resolved_ip})" if resolved_ip else host
+                print(f"  {label:<25}  {status:<6}  avg={avg:<10}  loss={loss:<7}  fail={cf}{flag}")
         time.sleep(interval)
 
 
